@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <hr>
 
 <?php if (empty($tasks)): ?>
-    <p>No tasks yet. Add some!</p>
+    <p>Looking a little lazy there. Add some tasks!</p>
 <?php else: ?>
     <?php foreach ($tasks as $task): ?>
         <div class="task">
