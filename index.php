@@ -17,13 +17,14 @@ function saveTasks($taskFile, $tasks) {
     file_put_contents($taskFile, json_encode($tasks, JSON_PRETTY_PRINT));
 }
 
-// Add task
-function addTask(&$tasks, $title) {
+// Add task with optional due date
+function addTask(&$tasks, $title, $dueDate = null) {
     $tasks[] = [
         'id' => uniqid(),
         'title' => htmlspecialchars($title),
         'completed' => false,
-        'created_at' => date('Y-m-d H:i:s')
+        'created_at' => date('Y-m-d H:i:s'),
+        'due_date' => $dueDate
     ];
 }
 
@@ -50,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'];
 
         if ($action === 'add' && !empty($_POST['title'])) {
-            addTask($tasks, $_POST['title']);
+            $dueDate = !empty($_POST['due_date']) ? $_POST['due_date'] : null;
+            addTask($tasks, $_POST['title'], $dueDate);
         }
 
         if ($action === 'delete' && isset($_POST['id'])) {
@@ -77,8 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         h1 { color: #333; }
         .task { padding: 10px; background: #fff; border: 1px solid #ddd; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
         .completed { text-decoration: line-through; color: gray; }
+        .overdue { color: red; font-weight: bold; }
         form.inline { display: inline; }
-        input[type="text"] { padding: 10px; width: 300px; }
+        input[type="text"], input[type="date"] { padding: 10px; margin-right: 5px; }
         input[type="submit"] { padding: 10px 15px; }
     </style>
 </head>
@@ -88,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <form method="POST">
     <input type="text" name="title" placeholder="New Task..." required>
+    <input type="date" name="due_date">
     <input type="hidden" name="action" value="add">
     <input type="submit" value="Add Task">
 </form>
@@ -98,9 +102,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p>Looking a little lazy there. Add some tasks!</p>
 <?php else: ?>
     <?php foreach ($tasks as $task): ?>
+        <?php
+            $isOverdue = !$task['completed'] && !empty($task['due_date']) && strtotime($task['due_date']) < time();
+            $taskClasses = [];
+            if ($task['completed']) $taskClasses[] = 'completed';
+            if ($isOverdue) $taskClasses[] = 'overdue';
+        ?>
         <div class="task">
-            <span class="<?= $task['completed'] ? 'completed' : '' ?>">
-                <?= $task['title'] ?> <small>(created <?= $task['created_at'] ?>)</small>
+            <span class="<?= implode(' ', $taskClasses) ?>">
+                <?= $task['title'] ?> 
+                <small>
+                    (created <?= $task['created_at'] ?>
+                    <?php if (!empty($task['due_date'])): ?>
+                        , due <?= $task['due_date'] ?>
+                    <?php endif; ?>)
+                </small>
             </span>
             <div>
                 <form method="POST" class="inline">
